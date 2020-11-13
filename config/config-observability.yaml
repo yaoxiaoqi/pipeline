@@ -21,6 +21,7 @@ metadata:
     app.kubernetes.io/instance: default
     app.kubernetes.io/part-of: tekton-pipelines
 data:
+  metrics.backend-destination: prometheus
   _example: |
     ################################
     #                              #

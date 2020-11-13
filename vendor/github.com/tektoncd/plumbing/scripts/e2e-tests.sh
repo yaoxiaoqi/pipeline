@@ -265,6 +265,7 @@ function create_test_cluster_with_retries() {
 
 # Setup the test cluster for running the tests.
 function setup_test_cluster() {
+  echo "mew!!!!"
   # Fail fast during setup.
   set -o errexit
   set -o pipefail
@@ -284,11 +285,13 @@ function setup_test_cluster() {
 
   # If cluster admin role isn't set, this is a brand new cluster
   # Setup the admin role and also KO_DOCKER_REPO
-  if [[ -z "$(kubectl get clusterrolebinding cluster-admin-binding 2> /dev/null)" ]]; then
-    acquire_cluster_admin_role ${k8s_user} ${E2E_CLUSTER_NAME} ${E2E_CLUSTER_REGION} ${E2E_CLUSTER_ZONE}
-    kubectl config set-context ${k8s_cluster} --namespace=default
-    export KO_DOCKER_REPO=gcr.io/${E2E_PROJECT_ID}/${E2E_BASE_NAME}-e2e-img
-  fi
+#  if [[ -z "$(kubectl get clusterrolebinding cluster-admin-binding 2> /dev/null)" ]]; then
+#    acquire_cluster_admin_role ${k8s_user} ${E2E_CLUSTER_NAME} ${E2E_CLUSTER_REGION} ${E2E_CLUSTER_ZONE}
+#    kubectl config set-context ${k8s_cluster} --namespace=default
+#    [[ "${k8s_cluster}" =~ ^gke_.* ]] && export KO_DOCKER_REPO=gcr.io/${E2E_PROJECT_ID}/${E2E_BASE_NAME}-e2e-img
+#  fi
+
+  kubectl config set-context ${k8s_cluster} --namespace=default
 
   echo "- Project is ${E2E_PROJECT_ID}"
   echo "- Cluster is ${k8s_cluster}"
@@ -402,9 +405,9 @@ function initialize() {
     echo "\$PROJECT_ID is set to '${PROJECT_ID}', using it to run the tests"
     GCP_PROJECT="${PROJECT_ID}"
   fi
-  if (( ! IS_PROW )) && [[ -z "${GCP_PROJECT}" ]]; then
-    abort "set \$PROJECT_ID or use --gcp-project to select the GCP project where the tests are run"
-  fi
+#  if (( ! IS_PROW )) && [[ -z "${GCP_PROJECT}" ]]; then
+#    abort "set \$PROJECT_ID or use --gcp-project to select the GCP project where the tests are run"
+#  fi
 
   (( IS_PROW )) && [[ -z "${GCP_PROJECT}" ]] && IS_BOSKOS=1
 
