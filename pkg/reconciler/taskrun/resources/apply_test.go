@@ -30,6 +30,8 @@ import (
 	"github.com/tektoncd/pipeline/test/names"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"knative.dev/pkg/apis"
+	duckv1beta1 "knative.dev/pkg/apis/duck/v1beta1"
 )
 
 var (
@@ -994,9 +996,125 @@ func TestContext(t *testing.T) {
 				},
 			}},
 		},
+	}, {
+		description: "context retry count replacement",
+		rtr:         resources.ResolvedTaskResources{},
+		tr: v1beta1.TaskRun{
+			Status: v1beta1.TaskRunStatus{
+				TaskRunStatusFields: v1beta1.TaskRunStatusFields{
+					RetriesStatus: []v1beta1.TaskRunStatus{{
+						Status: duckv1beta1.Status{
+							Conditions: []apis.Condition{{
+								Type:   apis.ConditionSucceeded,
+								Status: corev1.ConditionFalse,
+							}},
+						},
+					}, {
+						Status: duckv1beta1.Status{
+							Conditions: []apis.Condition{{
+								Type:   apis.ConditionSucceeded,
+								Status: corev1.ConditionFalse,
+							}},
+						},
+					}},
+				},
+			},
+		},
+		spec: v1beta1.TaskSpec{
+			Steps: []v1beta1.Step{{
+				Container: corev1.Container{
+					Name:  "ImageName",
+					Image: "$(context.task.retry-count)-1",
+				},
+			}},
+		},
+		want: v1beta1.TaskSpec{
+			Steps: []v1beta1.Step{{
+				Container: corev1.Container{
+					Name:  "ImageName",
+					Image: "2-1",
+				},
+			}},
+		},
+	}, {
+		description: "context retry count replacement with task that never retries",
+		rtr:         resources.ResolvedTaskResources{},
+		tr:          v1beta1.TaskRun{},
+		spec: v1beta1.TaskSpec{
+			Steps: []v1beta1.Step{{
+				Container: corev1.Container{
+					Name:  "ImageName",
+					Image: "$(context.task.retry-count)-1",
+				},
+			}},
+		},
+		want: v1beta1.TaskSpec{
+			Steps: []v1beta1.Step{{
+				Container: corev1.Container{
+					Name:  "ImageName",
+					Image: "0-1",
+				},
+			}},
+		},
 	}} {
 		t.Run(tc.description, func(t *testing.T) {
 			got := resources.ApplyContexts(&tc.spec, &tc.rtr, &tc.tr)
+			if d := cmp.Diff(&tc.want, got); d != "" {
+				t.Errorf(diff.PrintWantGot(d))
+			}
+		})
+	}
+}
+
+func TestApplyPipelineTaskContexts(t *testing.T) {
+	for _, tc := range []struct {
+		description string
+		pt          v1beta1.PipelineTask
+		spec        v1beta1.TaskSpec
+		want        v1beta1.TaskSpec
+	}{{
+		description: "context retries replacement",
+		pt: v1beta1.PipelineTask{
+			Retries: 5,
+		},
+		spec: v1beta1.TaskSpec{
+			Steps: []v1beta1.Step{{
+				Container: corev1.Container{
+					Name:  "ImageName",
+					Image: "$(context.pipelineTask.retries)",
+				},
+			}},
+		},
+		want: v1beta1.TaskSpec{
+			Steps: []v1beta1.Step{{
+				Container: corev1.Container{
+					Name:  "ImageName",
+					Image: "5",
+				},
+			}},
+		},
+	}, {
+		description: "context retries replacement with no defined retries",
+		pt:          v1beta1.PipelineTask{},
+		spec: v1beta1.TaskSpec{
+			Steps: []v1beta1.Step{{
+				Container: corev1.Container{
+					Name:  "ImageName",
+					Image: "$(context.pipelineTask.retries)",
+				},
+			}},
+		},
+		want: v1beta1.TaskSpec{
+			Steps: []v1beta1.Step{{
+				Container: corev1.Container{
+					Name:  "ImageName",
+					Image: "0",
+				},
+			}},
+		},
+	}} {
+		t.Run(tc.description, func(t *testing.T) {
+			got := resources.ApplyPipelineTaskContexts(&tc.spec, &tc.pt)
 			if d := cmp.Diff(&tc.want, got); d != "" {
 				t.Errorf(diff.PrintWantGot(d))
 			}

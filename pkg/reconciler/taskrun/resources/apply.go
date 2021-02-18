@@ -19,6 +19,7 @@ package resources
 import (
 	"fmt"
 	"path/filepath"
+	"strconv"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
@@ -97,6 +98,15 @@ func ApplyResources(spec *v1beta1.TaskSpec, resolvedResources map[string]v1beta1
 	return ApplyReplacements(spec, replacements, map[string][]string{})
 }
 
+// ApplyPipelineTaskContexts applies the substitution from $(context.pipelineTask.*) with the specified values.
+// Uses "0" as a default if a value is not available.
+func ApplyPipelineTaskContexts(spec *v1beta1.TaskSpec, pt *v1beta1.PipelineTask) *v1beta1.TaskSpec {
+	replacements := map[string]string{
+		"context.pipelineTask.retries": strconv.Itoa(pt.Retries),
+	}
+	return ApplyReplacements(spec, replacements, map[string][]string{})
+}
+
 // ApplyContexts applies the substitution from $(context.(taskRun|task).*) with the specified values.
 // Uses "" as a default if a value is not available.
 func ApplyContexts(spec *v1beta1.TaskSpec, rtr *ResolvedTaskResources, tr *v1beta1.TaskRun) *v1beta1.TaskSpec {
@@ -105,6 +115,7 @@ func ApplyContexts(spec *v1beta1.TaskSpec, rtr *ResolvedTaskResources, tr *v1bet
 		"context.task.name":         rtr.TaskName,
 		"context.taskRun.namespace": tr.Namespace,
 		"context.taskRun.uid":       string(tr.ObjectMeta.UID),
+		"context.task.retry-count":  strconv.Itoa(len(tr.Status.RetriesStatus)),
 	}
 	return ApplyReplacements(spec, replacements, map[string][]string{})
 }

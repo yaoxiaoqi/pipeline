@@ -727,7 +727,7 @@ func (c *Reconciler) createTaskRun(ctx context.Context, rprt *resources.Resolved
 		// We pass the entire, original task ref because it may contain additional references like a Bundle url.
 		tr.Spec.TaskRef = rprt.PipelineTask.TaskRef
 	} else if rprt.ResolvedTaskResources.TaskSpec != nil {
-		tr.Spec.TaskSpec = rprt.ResolvedTaskResources.TaskSpec
+		tr.Spec.TaskSpec = tresources.ApplyPipelineTaskContexts(rprt.ResolvedTaskResources.TaskSpec, rprt.PipelineTask)
 	}
 
 	var pipelinePVCWorkspaceName string

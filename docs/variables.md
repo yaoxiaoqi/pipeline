@@ -43,6 +43,8 @@ For instructions on using variable substitutions see the relevant section of [th
 | `context.taskRun.namespace` | The namespace of the `TaskRun` that this `Task` is running in. |
 | `context.taskRun.uid` | The uid of the `TaskRun` that this `Task` is running in. |
 | `context.task.name` | The name of this `Task`. |
+| `context.task.retry-count` | The current retry number of this `Task`. |
+| `context.pipelineTask.retries` | The retries of this `PipelineTask`. |
 
 ### `PipelineResource` variables available in a `Task`
 
